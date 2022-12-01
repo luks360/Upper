@@ -3040,13 +3040,13 @@ textarea.form-control-lg {
 
 .btn-primary {
   color: #fff;
-  background-color: #64a19d;
-  border-color: #64a19d;
+  background-image: linear-gradient(310deg, #410e72 0%, #9a34ff 100%);
+  background-image: linear-gradient(310deg, #410e72 0%, #9a34ff 100%);
 }
 .btn-primary:hover {
   color: #fff;
-  background-color: #558985;
-  border-color: #50817e;
+  background-image: linear-gradient(310deg, #4f1188 0%, #b166fc 100%);
+  background-image: linear-gradient(310deg, #4f1188 0%, #b166fc 100%);
 }
 .btn-check:focus + .btn-primary, .btn-primary:focus {
   color: #fff;
