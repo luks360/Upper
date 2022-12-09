@@ -197,7 +197,7 @@
                             
                             {% for item in groups %}
                             <tr>
-                                <th scope="row">{{item.id}}</th>
+                                <th scope="row">{{ forloop.counter }}</th>
                                 <td>{{item.name}}</td>
                                 <td>R$ {{item.value__sum | floatformat:2}}</td>
                             </tr>
@@ -229,7 +229,7 @@
                         <tbody>
                             {% for item in profits %}
                             <tr>
-                                <th scope="row">{{item.id}}</th>
+                                <th scope="row">{{ forloop.counter }}</th>
                                 <td>{{item.name}}</td>
                                 <td>{{item.value}}</td>
                                 <td>{{item.group}}</td>
@@ -269,6 +269,21 @@
                             {% endfor %}
                         </tbody>
                       </table>
+                      <div class="pagination">
+                        <span class="step-links">
+                            {% if profits.has_previous %}
+                                <a href="?page={{ profits.previous_page_number }}">Anterior</a>
+                            {% endif %}
+                        
+                            <span class="current">
+                                {{ profits.number }} de {{ profits.paginator.num_pages }}
+                            </span>
+                        
+                            {% if profits.has_next %}
+                                <a href="?page={{ profits.next_page_number }}">Próxima</a>
+                            {% endif %}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
