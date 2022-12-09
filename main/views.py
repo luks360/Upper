@@ -1,11 +1,13 @@
 from decimal import Decimal
 from django.shortcuts import redirect, get_object_or_404, render
 from main.forms import EditProfitsForm, RegisterUserForm, RegisterGroupProfitsForm, RegisterProfitsForm
-from django.contrib.auth import authenticate, login, logout, get_user
+from django.contrib.auth import authenticate, login, logout
 from main.models import User, GroupProfits, Profits
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.db.models import Sum
+from datetime import datetime
+from django.core.paginator import Paginator
 
 # Create your views here.
 
@@ -19,7 +21,19 @@ def dashboard(request):
     if request.user.is_authenticated == False:
         return redirect('signin')
 
-    return render(request, 'dashboard/dashboard.html')
+    mes_profits = Profits.objects.filter(user=request.user).dates('date', 'year').values(
+        'date').annotate(Sum('value'))
+
+    labels = []
+    values = []
+
+    for data in range(len(mes_profits)):
+        labels.append(mes_profits[data]['date'].strftime("%B"))
+        values.append(float(mes_profits[data]['value__sum']))
+
+    print(mes_profits)
+    print(values)
+    return render(request, 'dashboard/dashboard.html', {'date': labels, 'value': values})
 
 
 def profile(request):
@@ -36,6 +50,11 @@ def profits(request):
     result = Profits.objects.values("group").filter(
         user=request.user).annotate(Sum("value"))
     gr = GroupProfits.objects.filter(user=request.user)
+
+    profits = Profits.objects.filter(user=request.user).order_by('-id')
+    paginator = Paginator(profits, 6)
+    page = request.GET.get('page')
+    profitsR = paginator.get_page(page)
 
     count = 0
 
@@ -60,7 +79,7 @@ def profits(request):
                     'form1': form1,
                     'formE': formE,
                     'groups': gr,
-                    'profits': Profits.objects.filter(user=request.user),
+                    'profits': profitsR,
                     'count': count,
                     'msg': 'Erro! Já existe um grupo com o mesmo nome',
                 }
@@ -77,7 +96,6 @@ def profits(request):
     form1 = RegisterProfitsForm(user=request.user)
     form = RegisterGroupProfitsForm()
     formE = EditProfitsForm(user=request.user)
-    profitsR = Profits.objects.filter(user=request.user)
     valorR = 0
     for item in profitsR:
         valorR += item.value
@@ -85,11 +103,11 @@ def profits(request):
     mes_profits = Profits.objects.dates('date', 'month').values(
         'date').annotate(Sum('value'))
 
-    print(mes_profits[0])
+    print(mes_profits)
 
     item = {
         'form1': form1,
-        'profits': Profits.objects.filter(user=request.user),
+        'profits': profitsR,
         'form': form,
         'formE': formE,
         'groups': gr,
