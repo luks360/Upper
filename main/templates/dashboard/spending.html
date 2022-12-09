@@ -198,12 +198,12 @@
                             {% for item in groups %}
                             <tr>
                                 <th scope="row">{{ forloop.counter }}</th>
-                                <td>{{item.name}}</td>
-                                <td>R$ {{item.value__sum | floatformat:2}}</td>
+                                <td>{{item.group}}</td>
+                                <td>R$ {{item.value | floatformat:2}}</td>
                             </tr>
                             {% endfor %}
                             <td colspan="2">Total</td>
-                            <td>R$ {{result}}</td>
+                            <td>R$ {{result | floatformat:2}}</td>
                         </tbody>
                       </table>
                 </div>
