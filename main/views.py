@@ -21,10 +21,14 @@ def dashboard(request):
     if request.user.is_authenticated == False:
         return redirect('signin')
 
-    mes_profits = Profits.objects.filter(user=request.user).dates('date', 'year').values(
+    currentDateTime = datetime.now()
+    date = currentDateTime.date()
+    year = date.strftime("%Y")
+
+    mes_profits = Profits.objects.filter(user=request.user, date__year=year).dates('date', 'year').values(
         'date').annotate(Sum('value'))
 
-    mes_spending = Spending.objects.filter(user=request.user).dates('date', 'year').values(
+    mes_spending = Spending.objects.filter(user=request.user, date__year=year).dates('date', 'year').values(
         'date').annotate(Sum('value'))
 
     labels = []
@@ -40,8 +44,6 @@ def dashboard(request):
         labels1.append(mes_spending[data]['date'].strftime("%B"))
         values1.append(float(mes_spending[data]['value__sum']))
 
-    print(mes_profits)
-    print(values)
     return render(request, 'dashboard/dashboard.html', {'date': labels, 'value': values, 'value1': values1})
 
 
@@ -56,11 +58,29 @@ def profits(request):
     if request.user.is_authenticated == False:
         return redirect('signin')
 
-    result = Profits.objects.values("group").filter(
-        user=request.user).annotate(Sum("value"))
-    gr = GroupProfits.objects.filter(user=request.user)
+    currentDateTime = datetime.now()
+    date = currentDateTime.date()
+    year = date.strftime("%Y")
 
-    profits = Profits.objects.filter(user=request.user).order_by('-id')
+    result = Profits.objects.values("group").filter(
+        user=request.user, date__year=year).annotate(Sum("value"))
+    gr1 = GroupProfits.objects.filter(user=request.user)
+
+    gr = []
+    for i in range(len(result)):
+        if result:
+            gr.append({
+                'group': gr1[i].name,
+                'value': result[i]['value__sum'],
+            })
+        else:
+            gr.append({
+                'group': gr1[i].name,
+                'value': 0,
+            })
+
+    profits = Profits.objects.filter(
+        user=request.user).order_by('-id')
     paginator = Paginator(profits, 6)
     page = request.GET.get('page')
     profitsR = paginator.get_page(page)
@@ -107,13 +127,9 @@ def profits(request):
     form = RegisterGroupProfitsForm()
     formE = EditProfitsForm(user=request.user)
     valorR = 0
-    for item in profitsR:
+    p = Profits.objects.filter(user=request.user, date__year=year)
+    for item in p:
         valorR += item.value
-
-    mes_profits = Profits.objects.dates('date', 'month').values(
-        'date').annotate(Sum('value'))
-
-    print(mes_profits)
 
     item = {
         'form1': form1,
@@ -122,9 +138,8 @@ def profits(request):
         'formE': formE,
         'groups': gr,
         'result': valorR,
-        'mes': mes_profits
     }
-    print(result)
+
     return render(request, 'dashboard/profits.html', item)
 
 
@@ -140,13 +155,11 @@ def profitEdit(request, id):
     profit = get_object_or_404(Profits, pk=id)
     form = EditProfitsForm(instance=profit, user=request.user)
 
-    print(request.method)
     if request.method == 'POST':
         form = EditProfitsForm(
             request.POST, instance=profit, user=request.user
         )
 
-        print(form.is_valid())
         if (form.is_valid()):
             profit = form.save(commit=False)
             profit.name = form.cleaned_data['name']
@@ -163,9 +176,26 @@ def spending(request):
     if request.user.is_authenticated == False:
         return redirect('signin')
 
+    currentDateTime = datetime.now()
+    date = currentDateTime.date()
+    year = date.strftime("%Y")
+
     result = Spending.objects.values("group").filter(
-        user=request.user).annotate(Sum("value"))
-    gr = GroupSpending.objects.filter(user=request.user)
+        user=request.user, date__year=year).annotate(Sum("value"))
+    gr1 = GroupSpending.objects.filter(user=request.user)
+
+    gr = []
+    for i in range(len(result)):
+        if result:
+            gr.append({
+                'group': gr1[i].name,
+                'value': result[i]['value__sum'],
+            })
+        else:
+            gr.append({
+                'group': gr1[i].name,
+                'value': 0,
+            })
 
     spendings = Spending.objects.filter(user=request.user).order_by('-id')
     paginator = Paginator(spendings, 6)
@@ -216,11 +246,10 @@ def spending(request):
     form = RegisterGroupSpendingForm()
     formE = EditSpendingForm(user=request.user)
     valorR = 0
-    for item in spendingsR:
-        valorR += item.value
 
-    mes_spending = Spending.objects.dates('date', 'month').values(
-        'date').annotate(Sum('value'))
+    s = Spending.objects.filter(user=request.user, date__year=year)
+    for item in s:
+        valorR += item.value
 
     item = {
         'form1': form1,
@@ -229,7 +258,6 @@ def spending(request):
         'formE': formE,
         'groups': gr,
         'result': valorR,
-        'mes': mes_spending
     }
     return render(request, 'dashboard/spending.html', item)
 
