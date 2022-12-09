@@ -24,6 +24,7 @@ def dashboard(request):
     currentDateTime = datetime.now()
     date = currentDateTime.date()
     year = date.strftime("%Y")
+    month = date.strftime("%m")
 
     mes_profits = Profits.objects.filter(user=request.user, date__year=year).dates('date', 'year').values(
         'date').annotate(Sum('value'))
@@ -33,7 +34,6 @@ def dashboard(request):
 
     labels = []
     values = []
-    labels1 = []
     values1 = []
 
     for data in range(len(mes_profits)):
@@ -41,10 +41,30 @@ def dashboard(request):
         values.append(float(mes_profits[data]['value__sum']))
 
     for data in range(len(mes_spending)):
-        labels1.append(mes_spending[data]['date'].strftime("%B"))
         values1.append(float(mes_spending[data]['value__sum']))
 
-    return render(request, 'dashboard/dashboard.html', {'date': labels, 'value': values, 'value1': values1})
+    profitsT = 0
+    p = Profits.objects.filter(
+        user=request.user, date__month=month, date__year=year)
+    for item in p:
+        profitsT += item.value
+
+    spendingT = 0
+    s = Spending.objects.filter(
+        user=request.user, date__month=month, date__year=year)
+    for item in s:
+        spendingT += item.value
+
+    gain = profitsT - spendingT
+
+    item = {
+        'date': labels,
+        'value': values,
+        'value1': values1,
+        'totais': {'profitsT': profitsT, 'spendingT': spendingT, 'gain': gain},
+    }
+
+    return render(request, 'dashboard/dashboard.html', item)
 
 
 def profile(request):

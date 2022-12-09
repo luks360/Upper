@@ -182,7 +182,7 @@
                   <div class="numbers">
                     <p class="text-sm mb-0 text-capitalize font-weight-bold">Ganhos totais</p>
                     <h5 class="font-weight-bolder mb-0">
-                      $53,000
+                      R$ {{totais.profitsT | floatformat:2}}
                       <span class="text-success text-sm font-weight-bolder">+55%</span>
                     </h5>
                   </div>
@@ -204,7 +204,7 @@
                   <div class="numbers">
                     <p class="text-sm mb-0 text-capitalize font-weight-bold">Lucro</p>
                     <h5 class="font-weight-bolder mb-0">
-                      2,300
+                      R$ {{totais.gain | floatformat:2}}
                       <span class="text-success text-sm font-weight-bolder">+3%</span>
                     </h5>
                   </div>
@@ -226,7 +226,7 @@
                   <div class="numbers">
                     <p class="text-sm mb-0 text-capitalize font-weight-bold">Gastos</p>
                     <h5 class="font-weight-bolder mb-0">
-                      -3,462
+                      R$ -{{totais.spendingT | floatformat:2}}
                       <span class="text-danger text-sm font-weight-bolder">-2%</span>
                     </h5>
                   </div>
