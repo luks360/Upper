@@ -1,8 +1,8 @@
 from decimal import Decimal
 from django.shortcuts import redirect, get_object_or_404, render
-from main.forms import EditProfitsForm, RegisterUserForm, RegisterGroupProfitsForm, RegisterProfitsForm
+from main.forms import EditProfitsForm, RegisterUserForm, RegisterGroupProfitsForm, RegisterProfitsForm, RegisterSpendingForm, EditSpendingForm, RegisterGroupSpendingForm
 from django.contrib.auth import authenticate, login, logout
-from main.models import User, GroupProfits, Profits
+from main.models import User, GroupProfits, Profits, GroupSpending, Spending
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.db.models import Sum
@@ -24,16 +24,25 @@ def dashboard(request):
     mes_profits = Profits.objects.filter(user=request.user).dates('date', 'year').values(
         'date').annotate(Sum('value'))
 
+    mes_spending = Spending.objects.filter(user=request.user).dates('date', 'year').values(
+        'date').annotate(Sum('value'))
+
     labels = []
     values = []
+    labels1 = []
+    values1 = []
 
     for data in range(len(mes_profits)):
         labels.append(mes_profits[data]['date'].strftime("%B"))
         values.append(float(mes_profits[data]['value__sum']))
 
+    for data in range(len(mes_spending)):
+        labels1.append(mes_spending[data]['date'].strftime("%B"))
+        values1.append(float(mes_spending[data]['value__sum']))
+
     print(mes_profits)
     print(values)
-    return render(request, 'dashboard/dashboard.html', {'date': labels, 'value': values})
+    return render(request, 'dashboard/dashboard.html', {'date': labels, 'value': values, 'value1': values1})
 
 
 def profile(request):
@@ -67,6 +76,7 @@ def profits(request):
                 form = profits_form.save(commit=False)
                 form.user = request.user
                 form.save()
+                return redirect('profits')
 
         if group_profits_form:
             try:
@@ -153,7 +163,104 @@ def spending(request):
     if request.user.is_authenticated == False:
         return redirect('signin')
 
-    return render(request, 'dashboard/spending.html')
+    result = Spending.objects.values("group").filter(
+        user=request.user).annotate(Sum("value"))
+    gr = GroupSpending.objects.filter(user=request.user)
+
+    spendings = Spending.objects.filter(user=request.user).order_by('-id')
+    paginator = Paginator(spendings, 6)
+    page = request.GET.get('page')
+    spendingsR = paginator.get_page(page)
+
+    count = 0
+
+    if request.method == "POST":
+        group_spending_form = RegisterGroupSpendingForm(data=request.POST)
+        spending_form = RegisterSpendingForm(request.POST, user=request.user)
+
+        if spending_form:
+            if spending_form.is_valid():
+                form = spending_form.save(commit=False)
+                form.user = request.user
+                form.save()
+                return redirect('spending')
+
+        if group_spending_form:
+            try:
+                group_aux = GroupSpending.objects.get(
+                    name=request.POST['name'])
+                form = RegisterGroupSpendingForm()
+                formE = EditSpendingForm(user=request.user)
+                form1 = RegisterSpendingForm(user=request.user)
+                item = {
+                    'form': form,
+                    'form1': form1,
+                    'formE': formE,
+                    'groups': gr,
+                    'spending': spendingsR,
+                    'count': count,
+                    'msg': 'Erro! Já existe um grupo com o mesmo nome',
+                }
+
+                if group_aux:
+                    return render(request, 'dashboard/spending.html', item)
+
+            except GroupSpending.DoesNotExist:
+                if group_spending_form.is_valid():
+                    form = group_spending_form.save(commit=False)
+                    form.user = request.user
+                    form.save()
+                    return redirect('spending')
+
+    form1 = RegisterSpendingForm(user=request.user)
+    form = RegisterGroupSpendingForm()
+    formE = EditSpendingForm(user=request.user)
+    valorR = 0
+    for item in spendingsR:
+        valorR += item.value
+
+    mes_spending = Spending.objects.dates('date', 'month').values(
+        'date').annotate(Sum('value'))
+
+    item = {
+        'form1': form1,
+        'spending': spendingsR,
+        'form': form,
+        'formE': formE,
+        'groups': gr,
+        'result': valorR,
+        'mes': mes_spending
+    }
+    return render(request, 'dashboard/spending.html', item)
+
+
+@login_required
+def spendingDel(request, id):
+    spending = Spending.objects.filter(id=id).first()
+    spending.delete()
+    return redirect('spending')
+
+
+@login_required
+def spendingEdit(request, id):
+    spending = get_object_or_404(Spending, pk=id)
+    form = EditSpendingForm(instance=spending, user=request.user)
+
+    if request.method == 'POST':
+        form = EditSpendingForm(
+            request.POST, instance=spending, user=request.user
+        )
+
+        if (form.is_valid()):
+            spending = form.save(commit=False)
+            spending.name = form.cleaned_data['name']
+            spending.value = form.cleaned_data['value']
+            spending.group = form.cleaned_data['group']
+            spending.date = form.cleaned_data['date']
+            spending.save()
+            return redirect('spending')
+
+    return redirect('spending')
 
 
 def signIn(request):

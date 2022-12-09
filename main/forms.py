@@ -1,5 +1,5 @@
 from django import forms
-from main.models import Profits, User, GroupProfits
+from main.models import Profits, User, GroupProfits, Spending, GroupSpending
 
 
 class RegisterUserForm(forms.ModelForm):
@@ -56,6 +56,7 @@ class EditProfitsForm(forms.ModelForm):
             self.fields['group'].queryset = self.fields['group'].queryset.filter(
                 user=user)
             self.fields['group'].widget.attrs['class'] = 'form-control'
+            self.fields['group'].widget.attrs['style'] = 'margin-bottom: 20px;'
 
     class Meta:
         model = Profits
@@ -69,6 +70,63 @@ class RegisterGroupProfitsForm(forms.ModelForm):
 
     class Meta:
         model = GroupProfits
+        fields = ['name']
+
+
+class RegisterSpendingForm(forms.ModelForm):
+    value = forms.DecimalField(widget=forms.NumberInput(
+        attrs={'placeholder': 'Digite o valor...', 'class': 'form-control'}), decimal_places=2, max_digits=10)
+    date = forms.DateField(widget=forms.TextInput(attrs={
+                           'placeholder': 'Digite uma data...', 'class': 'form-control'}), input_formats=['%m/%d/%Y'])
+    name = forms.CharField(widget=forms.TextInput(
+        attrs={'placeholder': 'Digite o nome...', 'class': 'form-control'}))
+
+    group = forms.ModelChoiceField(queryset=GroupSpending.objects.all())
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super(RegisterSpendingForm, self).__init__(*args, **kwargs)
+        if user:
+            self.fields['group'].queryset = self.fields['group'].queryset.filter(
+                user=user)
+            self.fields['group'].widget.attrs['class'] = 'form-control'
+
+    class Meta:
+        model = Spending
+        fields = ['name', 'value', 'group', 'date']
+
+
+class EditSpendingForm(forms.ModelForm):
+    value = forms.DecimalField(widget=forms.NumberInput(
+        attrs={'placeholder': 'Digite o valor...', 'class': 'form-control', 'style': 'margin-bottom: 20px;'}), decimal_places=2, max_digits=10)
+    date = forms.DateField(widget=forms.TextInput(attrs={
+                           'placeholder': 'Digite uma data...', 'class': 'form-control', 'style': 'margin-bottom: 20px;'}), input_formats=['%m/%d/%Y'])
+    name = forms.CharField(widget=forms.TextInput(
+        attrs={'placeholder': 'Digite o nome...', 'class': 'form-control', 'style': 'margin-bottom: 20px;'}))
+
+    group = forms.ModelChoiceField(queryset=GroupSpending.objects.all())
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super(EditSpendingForm, self).__init__(*args, **kwargs)
+        if user:
+            self.fields['group'].queryset = self.fields['group'].queryset.filter(
+                user=user)
+            self.fields['group'].widget.attrs['class'] = 'form-control'
+            self.fields['group'].widget.attrs['style'] = 'margin-bottom: 20px;'
+
+    class Meta:
+        model = Spending
+        fields = ['name', 'value', 'group', 'date']
+
+
+class RegisterGroupSpendingForm(forms.ModelForm):
+
+    name = forms.CharField(widget=forms.TextInput(
+        attrs={'placeholder': 'Digite o nome do grupo...', 'class': 'form-control'}))
+
+    class Meta:
+        model = GroupSpending
         fields = ['name']
 
 
