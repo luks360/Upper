@@ -5548,12 +5548,13 @@ fieldset:disabled .btn {
     --bs-pagination-active-color: #fff;
     --bs-pagination-active-bg: #cb0c9f;
     --bs-pagination-active-border-color: #cb0c9f;
-    --bs-pagination-disabled-color: #6c757d;
+    --bs-pagination-disabled-color: rgb(212, 212, 212);
     --bs-pagination-disabled-bg: #fff;
     --bs-pagination-disabled-border-color: #dee2e6;
     display: flex;
     padding-left: 0;
     list-style: none;
+    justify-content: center;
 }
 
 .page-link {
@@ -24828,7 +24829,7 @@ h4,
 
 a {
     letter-spacing: -0.025rem;
-    color: #344767;
+    color: var(--bs-highlight-bg);
 }
 
 .text-sm {
