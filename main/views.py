@@ -35,6 +35,9 @@ def dashboard(request):
     labels = []
     values = []
     values1 = []
+    colorP = 'success'
+    colorS = 'success'
+    colorG = 'success'
 
     for data in range(len(mes_profits)):
         labels.append(mes_profits[data]['date'].strftime("%B"))
@@ -55,13 +58,67 @@ def dashboard(request):
     for item in s:
         spendingT += item.value
 
+    profitsTA = 0
+    pa = Profits.objects.filter(
+        user=request.user, date__month=date.month-1, date__year=year)
+    for item in pa:
+        profitsTA += item.value
+
+    spendingTA = 0
+    sa = Spending.objects.filter(
+        user=request.user, date__month=date.month-1, date__year=year)
+    for item in sa:
+        spendingTA += item.value
+
+    if profitsT or profitsTA:
+        perP = ((profitsT - profitsTA) / profitsT) * 100
+    else:
+        perP = 0
+
+    if spendingT or spendingTA:
+        perS = ((spendingT - spendingTA) / spendingT) * 100
+    else:
+        perS = 0
+
+    gainA = profitsTA - spendingTA
+
     gain = profitsT - spendingT
+
+    if gain or gainA:
+        perG = ((gain - gainA) / gain) * 100
+    else:
+        perG = 0
+
+    if perP < 0:
+        colorP = "danger"
+    elif perP == 0:
+        colorP = "secondary"
+
+    if perS < 0:
+        colorS = "danger"
+    elif perS == 0:
+        colorS = "secondary"
+
+    if perG < 0:
+        colorG = "danger"
+    elif perG == 0:
+        colorG = "secondary"
 
     item = {
         'date': labels,
         'value': values,
         'value1': values1,
-        'totais': {'profitsT': profitsT, 'spendingT': spendingT, 'gain': gain},
+        'totais': {
+            'profitsT': profitsT,
+            'spendingT': spendingT,
+            'gain': gain,
+            'perP': perP,
+            'perS': perS,
+            'perG': perG,
+            'colorP': colorP,
+            'colorS': colorS,
+            'colorG': colorG,
+        }
     }
 
     return render(request, 'dashboard/dashboard.html', item)
@@ -81,9 +138,10 @@ def profits(request):
     currentDateTime = datetime.now()
     date = currentDateTime.date()
     year = date.strftime("%Y")
+    month = date.strftime("%m")
 
     result = Profits.objects.values("group").filter(
-        user=request.user, date__year=year).annotate(Sum("value"))
+        user=request.user, date__year=year, date__month=month).annotate(Sum("value"))
     gr1 = GroupProfits.objects.filter(user=request.user)
 
     gr = []
@@ -147,7 +205,8 @@ def profits(request):
     form = RegisterGroupProfitsForm()
     formE = EditProfitsForm(user=request.user)
     valorR = 0
-    p = Profits.objects.filter(user=request.user, date__year=year)
+    p = Profits.objects.filter(
+        user=request.user, date__year=year, date__month=month)
     for item in p:
         valorR += item.value
 
@@ -199,9 +258,10 @@ def spending(request):
     currentDateTime = datetime.now()
     date = currentDateTime.date()
     year = date.strftime("%Y")
+    month = date.strftime("%m")
 
     result = Spending.objects.values("group").filter(
-        user=request.user, date__year=year).annotate(Sum("value"))
+        user=request.user, date__year=year, date__month=month).annotate(Sum("value"))
     gr1 = GroupSpending.objects.filter(user=request.user)
 
     gr = []
@@ -267,7 +327,8 @@ def spending(request):
     formE = EditSpendingForm(user=request.user)
     valorR = 0
 
-    s = Spending.objects.filter(user=request.user, date__year=year)
+    s = Spending.objects.filter(
+        user=request.user, date__year=year, date__month=month)
     for item in s:
         valorR += item.value
 

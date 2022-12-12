@@ -183,7 +183,7 @@
                     <p class="text-sm mb-0 text-capitalize font-weight-bold">Ganhos totais</p>
                     <h5 class="font-weight-bolder mb-0">
                       R$ {{totais.profitsT | floatformat:2}}
-                      <span class="text-success text-sm font-weight-bolder">+55%</span>
+                      <span class="text-{{totais.colorP}} text-sm font-weight-bolder">{{totais.perP | floatformat:1}}%</span>
                     </h5>
                   </div>
                 </div>
@@ -205,7 +205,7 @@
                     <p class="text-sm mb-0 text-capitalize font-weight-bold">Lucro</p>
                     <h5 class="font-weight-bolder mb-0">
                       R$ {{totais.gain | floatformat:2}}
-                      <span class="text-success text-sm font-weight-bolder">+3%</span>
+                      <span class="text-{{totais.colorG}} text-sm font-weight-bolder">{{totais.perG | floatformat:1}}%</span>
                     </h5>
                   </div>
                 </div>
@@ -227,7 +227,7 @@
                     <p class="text-sm mb-0 text-capitalize font-weight-bold">Gastos</p>
                     <h5 class="font-weight-bolder mb-0">
                       R$ -{{totais.spendingT | floatformat:2}}
-                      <span class="text-danger text-sm font-weight-bolder">-2%</span>
+                      <span class="text-{{totais.colorS}} text-sm font-weight-bolder">{{totais.perS | floatformat:1}}%</span>
                     </h5>
                   </div>
                 </div>
@@ -246,10 +246,6 @@
           <div class="card z-index-2">
             <div class="card-header pb-0">
               <h6>Comparação entre lucros e gastos</h6>
-              <p class="text-sm">
-                <i class="fa fa-arrow-up text-success"></i>
-                <span class="font-weight-bold">4% more</span> in 2021
-              </p>
             </div>
             <div class="card-body p-3">
               <div class="chart">
