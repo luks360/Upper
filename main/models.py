@@ -17,14 +17,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'username'
+    USERNAME_FIELD = "username"
 
 
 class GroupSpending(models.Model):
 
     name = models.CharField(max_length=200)
-    user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, default='')
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, default="")
 
     def __str__(self):
         return self.name
@@ -33,8 +32,7 @@ class GroupSpending(models.Model):
 class GroupProfits(models.Model):
 
     name = models.CharField(max_length=200)
-    user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, default='')
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, default="")
 
     def __str__(self):
         return self.name
@@ -44,8 +42,7 @@ class Spending(models.Model):
 
     name = models.CharField(max_length=200)
     value = models.DecimalField(decimal_places=2, max_digits=10)
-    user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, default='')
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, default="")
     group = models.ForeignKey(GroupSpending, on_delete=models.CASCADE)
     date = models.DateField()
 
@@ -53,7 +50,6 @@ class Spending(models.Model):
 class Profits(models.Model):
     name = models.CharField(max_length=200)
     value = models.DecimalField(decimal_places=2, max_digits=10)
-    user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, default='')
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, default="")
     group = models.ForeignKey(GroupProfits, on_delete=models.CASCADE)
     date = models.DateField()

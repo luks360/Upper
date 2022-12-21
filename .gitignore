@@ -1,1 +1,5 @@
 /venv/
+*/*,cover
+.coverage
+__pycache__
+/main/templates/dashboard/profile.html

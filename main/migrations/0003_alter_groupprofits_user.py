@@ -8,13 +8,17 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0002_alter_groupprofits_user_alter_groupspending_user_and_more'),
+        ("main", "0002_alter_groupprofits_user_alter_groupspending_user_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='groupprofits',
-            name='user',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="groupprofits",
+            name="user",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]
