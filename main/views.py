@@ -1,142 +1,145 @@
-from django.shortcuts import redirect, get_object_or_404, render
-from main.forms import (
-    EditProfitsForm,
-    RegisterUserForm,
-    RegisterGroupProfitsForm,
-    RegisterProfitsForm,
-    RegisterSpendingForm,
-    EditSpendingForm,
-    RegisterGroupSpendingForm,
-)
+from datetime import datetime
+
 from django.contrib.auth import authenticate, login, logout
-from main.models import User, GroupProfits, Profits, GroupSpending, Spending
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
-from django.db.models import Sum
-from datetime import datetime
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
+from django.db.models import Sum
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views import View
+from django.views.generic.edit import DeleteView
+
+from main.forms import (EditProfitsForm, EditSpendingForm,
+                        RegisterGroupProfitsForm, RegisterGroupSpendingForm,
+                        RegisterProfitsForm, RegisterSpendingForm,
+                        RegisterUserForm)
+from main.models import GroupProfits, GroupSpending, Profits, Spending, User
 
 # Create your views here.
 
 
-def home(request):
+class home(View):
+    def get(self, request):
 
-    return render(request, "main/index.html")
+        return render(request, "main/index.html")
 
 
-def dashboard(request):
-    if request.user.is_authenticated == False:
-        return redirect("signin")
+class dashboard(View, LoginRequiredMixin):
+    
+    login_url = "/signin"
 
     currentDateTime = datetime.now()
     date = currentDateTime.date()
     year = date.strftime("%Y")
     month = date.strftime("%m")
 
-    mes_profits = (
-        Profits.objects.filter(user=request.user, date__year=year)
-        .dates("date", "year")
-        .values("date")
-        .annotate(Sum("value"))
-    )
+    def get(self, request):
 
-    mes_spending = (
-        Spending.objects.filter(user=request.user, date__year=year)
-        .dates("date", "year")
-        .values("date")
-        .annotate(Sum("value"))
-    )
+        mes_profits = (
+            Profits.objects.filter(user=request.user, date__year=self.year)
+            .dates("date", "year")
+            .values("date")
+            .annotate(Sum("value"))
+        )
 
-    labels = []
-    values = []
-    values1 = []
-    colorP = "success"
-    colorS = "success"
-    colorG = "success"
+        mes_spending = (
+            Spending.objects.filter(user=request.user, date__year=self.year)
+            .dates("date", "year")
+            .values("date")
+            .annotate(Sum("value"))
+        )
 
-    for data in range(len(mes_profits)):  # pragma: no cover
-        labels.append(mes_profits[data]["date"].strftime("%B"))
-        values.append(float(mes_profits[data]["value__sum"]))
+        labels = []
+        values = []
+        values1 = []
+        colorP = "success"
+        colorS = "success"
+        colorG = "success"
 
-    for data in range(len(mes_spending)):  # pragma: no cover
-        values1.append(float(mes_spending[data]["value__sum"]))
+        for data in range(len(mes_profits)):  # pragma: no cover
+            labels.append(mes_profits[data]["date"].strftime("%B"))
+            values.append(float(mes_profits[data]["value__sum"]))
 
-    profitsT = 0
-    p = Profits.objects.filter(user=request.user, date__month=month, date__year=year)
-    for item in p:  # pragma: no cover
-        profitsT += item.value
+        for data in range(len(mes_spending)):  # pragma: no cover
+            values1.append(float(mes_spending[data]["value__sum"]))
 
-    spendingT = 0
-    s = Spending.objects.filter(user=request.user, date__month=month, date__year=year)
-    for item in s:  # pragma: no cover
-        spendingT += item.value
+        profitsT = 0
+        p = Profits.objects.filter(user=request.user, date__month=self.month, date__year=self.year)
+        for item in p:  # pragma: no cover
+            profitsT += item.value
 
-    profitsTA = 0
-    pa = Profits.objects.filter(
-        user=request.user, date__month=date.month - 1, date__year=year
-    )
-    for item in pa:  # pragma: no cover
-        profitsTA += item.value
+        spendingT = 0
+        s = Spending.objects.filter(user=request.user, date__month=self.month, date__year=self.year)
+        for item in s:  # pragma: no cover
+            spendingT += item.value
 
-    spendingTA = 0
-    sa = Spending.objects.filter(
-        user=request.user, date__month=date.month - 1, date__year=year
-    )
-    for item in sa:  # pragma: no cover
-        spendingTA += item.value
+        profitsTA = 0
+        pa = Profits.objects.filter(
+            user=request.user, date__month=self.date.month - 1, date__year=self.year
+        )
+        for item in pa:  # pragma: no cover
+            profitsTA += item.value
 
-    if profitsT or profitsTA:  # pragma: no cover
-        perP = ((profitsT - profitsTA) / profitsT) * 100
-    else:
-        perP = 0
+        spendingTA = 0
+        sa = Spending.objects.filter(
+            user=request.user, date__month=self.date.month - 1, date__year=self.year
+        )
+        for item in sa:  # pragma: no cover
+            spendingTA += item.value
 
-    if spendingT or spendingTA:  # pragma: no cover
-        perS = ((spendingT - spendingTA) / spendingT) * 100
-    else:
-        perS = 0
+        if profitsT or profitsTA:  # pragma: no cover
+            perP = ((profitsT - profitsTA) / profitsT) * 100
+        else:
+            perP = 0
 
-    gainA = profitsTA - spendingTA
+        if spendingT or spendingTA:  # pragma: no cover
+            perS = ((spendingT - spendingTA) / spendingT) * 100
+        else:
+            perS = 0
 
-    gain = profitsT - spendingT
+        gainA = profitsTA - spendingTA
 
-    if gain == None or gainA == None:  # pragma: no cover
-        perG = ((gain - gainA) / gain) * 100
-    else:
-        perG = 0
+        gain = profitsT - spendingT
 
-    if perP < 0:  # pragma: no cover
-        colorP = "danger"
-    elif perP == 0:
-        colorP = "secondary"
+        if gain == None or gainA == None:  # pragma: no cover
+            perG = ((gain - gainA) / gain) * 100
+        else:
+            perG = 0
 
-    if perS < 0:  # pragma: no cover
-        colorS = "danger"
-    elif perS == 0:
-        colorS = "secondary"
+        if perP < 0:  # pragma: no cover
+            colorP = "danger"
+        elif perP == 0:
+            colorP = "secondary"
 
-    if perG < 0:  # pragma: no cover
-        colorG = "danger"
-    elif perG == 0:  # pragma: no cover
-        colorG = "secondary"
+        if perS < 0:  # pragma: no cover
+            colorS = "danger"
+        elif perS == 0:
+            colorS = "secondary"
 
-    item = {
-        "date": labels,
-        "value": values,
-        "value1": values1,
-        "totais": {
-            "profitsT": profitsT,
-            "spendingT": spendingT,
-            "gain": gain,
-            "perP": perP,
-            "perS": perS,
-            "perG": perG,
-            "colorP": colorP,
-            "colorS": colorS,
-            "colorG": colorG,
-        },
-    }
+        if perG < 0:  # pragma: no cover
+            colorG = "danger"
+        elif perG == 0:  # pragma: no cover
+            colorG = "secondary"
 
-    return render(request, "dashboard/dashboard.html", item)
+        item = {
+            "date": labels,
+            "value": values,
+            "value1": values1,
+            "totais": {
+                "profitsT": profitsT,
+                "spendingT": spendingT,
+                "gain": gain,
+                "perP": perP,
+                "perS": perS,
+                "perG": perG,
+                "colorP": colorP,
+                "colorS": colorS,
+                "colorG": colorG,
+            },
+        }
+
+        return render(request, "dashboard/dashboard.html", item)
 
 
 # def profile(request):
@@ -146,47 +149,45 @@ def dashboard(request):
 #     return render(request, 'dashboard/profile.html')
 
 
-def profits(request):
-    if request.user.is_authenticated == False:
-        return redirect("signin")
+class profits(View, LoginRequiredMixin):
+
+    login_url = "/signin"
 
     currentDateTime = datetime.now()
     date = currentDateTime.date()
     year = date.strftime("%Y")
     month = date.strftime("%m")
 
-    result = (
-        Profits.objects.values("group")
-        .filter(user=request.user, date__year=year, date__month=month)
-        .annotate(Sum("value"))
-    )
-    gr1 = GroupProfits.objects.filter(user=request.user)
+    def post(self, request):
 
-    gr = []
-    for i in range(len(result)):  # pragma: no cover
-        if result:
-            gr.append(
-                {
-                    "group": gr1[i].name,
-                    "value": result[i]["value__sum"],
-                }
-            )
-        else:
-            gr.append(
-                {
-                    "group": gr1[i].name,
-                    "value": 0,
-                }
-            )
+        result = (
+            Profits.objects.values("group")
+            .filter(user=request.user, date__year=self.year, date__month=self.month)
+            .annotate(Sum("value"))
+        )
 
-    profits = Profits.objects.filter(user=request.user).order_by("-id")
-    paginator = Paginator(profits, 6)
-    page = request.GET.get("page")
-    profitsR = paginator.get_page(page)
+        gr1 = GroupProfits.objects.filter(user=request.user)
 
-    count = 0
-
-    if request.method == "POST":
+        gr = []
+        for i in range(len(result)):  # pragma: no cover
+            if result:
+                gr.append(
+                    {
+                        "group": gr1[i].name,
+                        "value": result[i]["value__sum"],
+                    }
+                )
+            else:
+                gr.append(
+                    {
+                        "group": gr1[i].name,
+                        "value": 0,
+                    }
+                )
+        profits = Profits.objects.filter(user=request.user).order_by("-id")
+        paginator = Paginator(profits, 6)
+        page = request.GET.get("page")
+        profitsR = paginator.get_page(page)
         group_profits_form = RegisterGroupProfitsForm(data=request.POST)
         profits_form = RegisterProfitsForm(request.POST, user=request.user)
 
@@ -209,7 +210,6 @@ def profits(request):
                     "formE": formE,
                     "groups": gr,
                     "profits": profitsR,
-                    "count": count,
                     "msg": "Erro! Já existe um grupo com o mesmo nome",
                 }
 
@@ -221,40 +221,75 @@ def profits(request):
                     form = group_profits_form.save(commit=False)
                     form.user = request.user
                     form.save()
+                    return render(request, "dashboard/profits.html", item)
 
-    form1 = RegisterProfitsForm(user=request.user)
-    form = RegisterGroupProfitsForm()
-    formE = EditProfitsForm(user=request.user)
-    valorR = 0
-    p = Profits.objects.filter(user=request.user, date__year=year, date__month=month)
-    for item in p:  # pragma: no cover
-        valorR += item.value
+    def get(self, request):
+        result = (
+            Profits.objects.values("group")
+            .filter(user=request.user, date__year=self.year, date__month=self.month)
+            .annotate(Sum("value"))
+        )
 
-    item = {
-        "form1": form1,
-        "profits": profitsR,
-        "form": form,
-        "formE": formE,
-        "groups": gr,
-        "result": valorR,
-    }
+        gr1 = GroupProfits.objects.filter(user=request.user)
 
-    return render(request, "dashboard/profits.html", item)
+        gr = []
+        for i in range(len(result)):  # pragma: no cover
+            if result:
+                gr.append(
+                    {
+                        "group": gr1[i].name,
+                        "value": result[i]["value__sum"],
+                    }
+                )
+            else:
+                gr.append(
+                    {
+                        "group": gr1[i].name,
+                        "value": 0,
+                    }
+                )
+        profits = Profits.objects.filter(user=request.user).order_by("-id")
+        paginator = Paginator(profits, 6)
+        page = request.GET.get("page")
+        profitsR = paginator.get_page(page)
+        form1 = RegisterProfitsForm(user=request.user)
+        form = RegisterGroupProfitsForm()
+        formE = EditProfitsForm(user=request.user)
+        valorR = 0
+        p = Profits.objects.filter(
+            user=request.user, date__year=self.year, date__month=self.month
+        )
+        for item in p:  # pragma: no cover
+            valorR += item.value
+
+        item = {
+            "form1": form1,
+            "profits": profitsR,
+            "form": form,
+            "formE": formE,
+            "groups": gr,
+            "result": valorR,
+        }
+
+        return render(request, "dashboard/profits.html", item)
 
 
-@login_required
-def profitDel(request, id):
-    profits = Profits.objects.filter(id=id).first()
-    profits.delete()
-    return redirect("profits")
+class profitDel(DeleteView, LoginRequiredMixin):
+    model = Profits
+    success_url = "/profits"
+    login_url = "/signin"
+
+    def get(self, request, *args, **kwargs):
+        return self.delete(request, *args, **kwargs)
 
 
-@login_required
-def profitEdit(request, id):
-    profit = get_object_or_404(Profits, pk=id)
-    form = EditProfitsForm(instance=profit, user=request.user)
+class profitEdit(View, LoginRequiredMixin):
 
-    if request.method == "POST":
+    login_url = "/signin"
+
+    def post(self, request, *args, **kwargs):
+
+        profit = get_object_or_404(Profits, pk=kwargs.get("pk"))
         form = EditProfitsForm(request.POST, instance=profit, user=request.user)
 
         if form.is_valid():  # pragma: no cover
@@ -265,51 +300,51 @@ def profitEdit(request, id):
             profit.date = form.cleaned_data["date"]
             profit.save()
             return redirect("profits")
+        else:
+            form = EditProfitsForm(instance=profit, user=request.user)
+            return redirect("profits")
 
-    return redirect("profits")
 
+class spending(View, LoginRequiredMixin):
 
-def spending(request):
-    if request.user.is_authenticated == False:
-        return redirect("signin")
+    login_url = "/signin"
 
     currentDateTime = datetime.now()
     date = currentDateTime.date()
     year = date.strftime("%Y")
     month = date.strftime("%m")
+    item = {}
 
-    result = (
-        Spending.objects.values("group")
-        .filter(user=request.user, date__year=year, date__month=month)
-        .annotate(Sum("value"))
-    )
-    gr1 = GroupSpending.objects.filter(user=request.user)
+    def post(self, request):
 
-    gr = []
-    for i in range(len(result)):  # pragma: no cover
-        if result:
-            gr.append(
-                {
-                    "group": gr1[i].name,
-                    "value": result[i]["value__sum"],
-                }
-            )
-        else:
-            gr.append(
-                {
-                    "group": gr1[i].name,
-                    "value": 0,
-                }
-            )
+        result = (
+            Spending.objects.values("group")
+            .filter(user=request.user, date__year=self.year, date__month=self.month)
+            .annotate(Sum("value"))
+        )
 
-    spendings = Spending.objects.filter(user=request.user).order_by("-id")
-    paginator = Paginator(spendings, 6)
-    page = request.GET.get("page")
-    spendingsR = paginator.get_page(page)
+        gr1 = GroupSpending.objects.filter(user=request.user)
 
-    count = 0
-
-    if request.method == "POST":
+        gr = []
+        for i in range(len(result)):  # pragma: no cover
+            if result:
+                gr.append(
+                    {
+                        "group": gr1[i].name,
+                        "value": result[i]["value__sum"],
+                    }
+                )
+            else:
+                gr.append(
+                    {
+                        "group": gr1[i].name,
+                        "value": 0,
+                    }
+                )
+        spending = Spending.objects.filter(user=request.user).order_by("-id")
+        paginator = Paginator(spending, 6)
+        page = request.GET.get("page")
+        spendingR = paginator.get_page(page)
         group_spending_form = RegisterGroupSpendingForm(data=request.POST)
         spending_form = RegisterSpendingForm(request.POST, user=request.user)
 
@@ -326,59 +361,91 @@ def spending(request):
                 form = RegisterGroupSpendingForm()
                 formE = EditSpendingForm(user=request.user)
                 form1 = RegisterSpendingForm(user=request.user)
-                item = {
+                self.item = {
                     "form": form,
                     "form1": form1,
                     "formE": formE,
                     "groups": gr,
-                    "spending": spendingsR,
-                    "count": count,
+                    "spending": spendingR,
                     "msg": "Erro! Já existe um grupo com o mesmo nome",
                 }
 
-                if group_aux:
-                    return render(request, "dashboard/spending.html", item)
+                if group_aux:  # pragma: no cover
+                    return render(request, "dashboard/spending.html", self.item)
 
             except GroupSpending.DoesNotExist:
                 if group_spending_form.is_valid():
                     form = group_spending_form.save(commit=False)
                     form.user = request.user
                     form.save()
-                    return redirect("spending")
+                    return render(request, "dashboard/spending.html", self.item)
 
-    form1 = RegisterSpendingForm(user=request.user)
-    form = RegisterGroupSpendingForm()
-    formE = EditSpendingForm(user=request.user)
-    valorR = 0
+    def get(self, request):
+        result = (
+            Spending.objects.values("group")
+            .filter(user=request.user, date__year=self.year, date__month=self.month)
+            .annotate(Sum("value"))
+        )
 
-    s = Spending.objects.filter(user=request.user, date__year=year, date__month=month)
-    for item in s:  # pragma: no cover
-        valorR += item.value
+        gr1 = GroupSpending.objects.filter(user=request.user)
 
-    item = {
-        "form1": form1,
-        "spending": spendingsR,
-        "form": form,
-        "formE": formE,
-        "groups": gr,
-        "result": valorR,
-    }
-    return render(request, "dashboard/spending.html", item)
+        gr = []
+        for i in range(len(result)):  # pragma: no cover
+            if result:
+                gr.append(
+                    {
+                        "group": gr1[i].name,
+                        "value": result[i]["value__sum"],
+                    }
+                )
+            else:
+                gr.append(
+                    {
+                        "group": gr1[i].name,
+                        "value": 0,
+                    }
+                )
+        spending = Spending.objects.filter(user=request.user).order_by("-id")
+        paginator = Paginator(spending, 6)
+        page = request.GET.get("page")
+        spendingR = paginator.get_page(page)
+        form1 = RegisterSpendingForm(user=request.user)
+        form = RegisterGroupSpendingForm()
+        formE = EditSpendingForm(user=request.user)
+        valorR = 0
+        p = Spending.objects.filter(
+            user=request.user, date__year=self.year, date__month=self.month
+        )
+        for item in p:  # pragma: no cover
+            valorR += item.value
+
+        self.item = {
+            "form1": form1,
+            "spending": spendingR,
+            "form": form,
+            "formE": formE,
+            "groups": gr,
+            "result": valorR,
+        }
+
+        return render(request, "dashboard/spending.html", self.item)
+
+class spendingDel(DeleteView, LoginRequiredMixin):
+    model = Spending
+    success_url = "/spending"
+    login_url = "/signin"
+
+    def get(self, request, *args, **kwargs):
+        return self.delete(request, *args, **kwargs)
 
 
-@login_required
-def spendingDel(request, id):
-    spending = Spending.objects.filter(id=id).first()
-    spending.delete()
-    return redirect("spending")
+class spendingEdit(View, LoginRequiredMixin):
 
+    login_url = "/signin"
 
-@login_required
-def spendingEdit(request, id):
-    spending = get_object_or_404(Spending, pk=id)
-    form = EditSpendingForm(instance=spending, user=request.user)
+    def post(self, request, *args, **kwargs):
 
-    if request.method == "POST":
+        spending = get_object_or_404(Spending, pk=kwargs.get("pk"))
         form = EditSpendingForm(request.POST, instance=spending, user=request.user)
 
         if form.is_valid():  # pragma: no cover
@@ -389,15 +456,13 @@ def spendingEdit(request, id):
             spending.date = form.cleaned_data["date"]
             spending.save()
             return redirect("spending")
+        else:
+            form = EditSpendingForm(instance=spending, user=request.user)
+            return redirect("spending")
 
-    return redirect("spending")
 
-
-def signIn(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
-
-    if request.method == "POST":  # pragma: no cover
+class signIn(View):
+    def post(self, request):
         user_aux = User.objects.get(email=request.POST["email"])
         password = request.POST["password"]
         user = authenticate(request, username=user_aux.username, password=password)
@@ -405,14 +470,15 @@ def signIn(request):
             login(request, user)
             return redirect("dashboard")
 
-    return render(request, "dashboard/sign-in.html")
+        return render(request, "dashboard/sign-in.html")
+
+    def get(self, request):
+
+        return render(request, "dashboard/sign-in.html")
 
 
-def signUp(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
-
-    if request.method == "POST":  # pragma: no cover
+class signUp(View):
+    def post(self, request):
         user_form = RegisterUserForm(data=request.POST)
         try:
             user_aux = User.objects.get(email=request.POST["email"])
@@ -429,18 +495,19 @@ def signUp(request):
             user = user_form.save(commit=False)
             user.password = make_password(user_form.cleaned_data["password"])
             user.save()
+            return render(request, "dashboard/sign-in.html")
 
-    form = RegisterUserForm()
-    item = {"form": form}
+    def get(self, request):
+        form = RegisterUserForm()
+        item = {"form": form}
 
-    return render(
-        request,
-        "dashboard/sign-up.html",
-        item,
-    )
+        return render(request, "dashboard/sign-up.html", item)
 
 
-@login_required
-def exit(request):
-    logout(request)
-    return redirect("/")
+class exit(View, LoginRequiredMixin):
+
+    login_url = "/signin"
+
+    def get(self, request):
+        logout(request)
+        return redirect("/")
